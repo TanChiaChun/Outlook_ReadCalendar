@@ -1,0 +1,11 @@
+.vscode/
+venv/
+__pycache__/
+pyinstaller/
+requirements_*.txt
+*.ini
+*.log
+data/
+input*
+output*
+*.db

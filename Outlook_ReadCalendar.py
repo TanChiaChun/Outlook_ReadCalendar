@@ -54,7 +54,7 @@ def insert_dict(pDict, pDate, pStart, pEnd):
     if pDict.get(pDate) == None:
         pDict[pDate] = MyCls.Day(diff)
     else:
-        pDict[pDate].busy_hours = pDict[pDate].busy_hours + diff
+        pDict[pDate].busy_hours += + diff
 
 def increment_date(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)

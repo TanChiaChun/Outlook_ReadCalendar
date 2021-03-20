@@ -52,12 +52,21 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
 def insert_dict_hrs(pDict, pDate, pStart, pEnd):
     diff = pEnd - pStart
     if pDict.get(pDate) == None:
-        pDict[pDate] = MyCls.Day(diff)
+        pDict[pDate] = MyCls.Day(diff, 0)
     else:
         pDict[pDate].busy_hours += diff
 
+def insert_dict_events(pDict, pDate):
+    if pDict.get(pDate) == None:
+        pDict[pDate] = MyCls.Day(timedelta(), 1)
+    else:
+        pDict[pDate].all_day_events += 1
+
 def increment_date(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)
+
+def decrement_date(pDate):
+    return datetime.combine(pDate - timedelta(days=1), time.min)
 
 def calculate_hrs(start, end, pDict):
     if start.date() == end.date():
@@ -71,9 +80,9 @@ def calculate_hrs(start, end, pDict):
             if new_start.date() == end.date():
                 insert_dict_hrs(pDict, new_start.date(), new_start, end)
                 break
-            elif start.date() != end.date():
+            elif new_start.date() != end.date():
                 start = new_start
-                new_start = increment_date(new_start)
+                new_start = increment_date(new_start.date())
                 insert_dict_hrs(pDict, start.date(), start, new_start)
 
 ##################################################
@@ -95,6 +104,24 @@ i = 0
 for cal in cal_items:
     if cal.AllDayEvent:
         curr_AllDayEvent = True
+
+        curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA).date()
+        curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_VBA).date()).date()
+
+        if curr_start_date == curr_end_date:
+            insert_dict_events(date_dict, curr_start_date)
+        
+        elif curr_start_date != curr_end_date:
+            insert_dict_events(date_dict, curr_start_date)
+            new_start_date = increment_date(curr_start_date).date()
+            
+            while new_start_date <= curr_end_date:
+                if new_start_date == curr_end_date:
+                    insert_dict_events(date_dict, new_start_date)
+                    break
+                elif new_start_date != curr_end_date:
+                    insert_dict_events(date_dict, new_start_date)
+                    new_start_date = increment_date(new_start_date).date()
         
     elif not(cal.AllDayEvent):
         curr_AllDayEvent = False

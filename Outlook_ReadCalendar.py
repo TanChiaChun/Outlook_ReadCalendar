@@ -113,12 +113,14 @@ outlook_folder = my_namespace.GetDefaultFolder(9).Folders(outlook_cal_folder) # 
 cal_items = outlook_folder.Items
 cal_items.IncludeRecurrences = True
 cal_items.Sort("[Start]")
+cal_items_filtered = cal_items.Restrict("[Start] > '03/15/2021 11:59 PM'")
+cal_items_filtered.Sort("[Start]")
 
 prev_start = datetime.min
 prev_end = datetime.min
 curr_AllDayEvent = False
 i = 0
-for cal in cal_items:
+for cal in cal_items_filtered:
     if cal.AllDayEvent:
         curr_AllDayEvent = True
 
@@ -154,7 +156,7 @@ for cal in cal_items:
         next_end = datetime.min
         next_AllDayEvent = False
         try:
-            next_cal = cal_items[i + 1]
+            next_cal = cal_items_filtered[i + 1]
             next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_VBA)
             next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_VBA)
             next_AllDayEvent = next_cal.AllDayEvent

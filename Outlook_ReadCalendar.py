@@ -15,7 +15,7 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 
 # Get command line arguments
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
-#my_arg_parser.add_argument("arg1", help="Text1")
+my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
 
@@ -38,7 +38,7 @@ CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
 outlook_cal_folder = "[Import]"
-start_date = parse_datetime(parse_datetime("2021-01-02", "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
+start_date = parse_datetime(parse_datetime(args.startdate, "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
 date_dict = {}
 
 ##################################################

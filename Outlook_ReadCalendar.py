@@ -32,12 +32,14 @@ logger = logging.getLogger("my_logger")
 ##################################################
 # Variables
 ##################################################
-DATETIME_FORMAT_VBA = "%Y-%m-%d %H:%M:%S+00:00"
+DATETIME_FORMAT_OUTPUT = "%Y-%m-%d %H:%M:%S+00:00"
+DATETIME_FORMAT_FILTER = "%Y-%m-%d %H:%M"
 CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
-date_dict = {}
 outlook_cal_folder = "[Import]"
+start_date = parse_datetime(parse_datetime("2021-01-02", "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
+date_dict = {}
 
 ##################################################
 # Functions
@@ -113,7 +115,7 @@ outlook_folder = my_namespace.GetDefaultFolder(9).Folders(outlook_cal_folder) # 
 cal_items = outlook_folder.Items
 cal_items.IncludeRecurrences = True
 cal_items.Sort("[Start]")
-cal_items_filtered = cal_items.Restrict("[Start] > '03/15/2021 11:59 PM'")
+cal_items_filtered = cal_items.Restrict(f"[Start] > '{start_date}'")
 cal_items_filtered.Sort("[Start]")
 
 prev_start = datetime.min
@@ -124,8 +126,8 @@ for cal in cal_items_filtered:
     if cal.AllDayEvent:
         curr_AllDayEvent = True
 
-        curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA).date()
-        curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_VBA).date()).date()
+        curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT).date()
+        curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT).date()).date()
 
         insert_dict_events(date_dict, curr_start_date, cal.Categories)
         
@@ -142,8 +144,8 @@ for cal in cal_items_filtered:
     elif not(cal.AllDayEvent):
         curr_AllDayEvent = False
 
-        curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA)
-        curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_VBA)
+        curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT)
+        curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT)
         
         if not(is_conflict(prev_start, prev_end, curr_start_temp, curr_end_temp)) and prev_start != datetime.min and prev_end != datetime.min:
             calculate_hrs(prev_start, prev_end, date_dict)
@@ -157,8 +159,8 @@ for cal in cal_items_filtered:
         next_AllDayEvent = False
         try:
             next_cal = cal_items_filtered[i + 1]
-            next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_VBA)
-            next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_VBA)
+            next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_OUTPUT)
+            next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_OUTPUT)
             next_AllDayEvent = next_cal.AllDayEvent
         except IndexError:
             pass

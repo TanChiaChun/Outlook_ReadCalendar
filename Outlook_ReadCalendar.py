@@ -2,7 +2,7 @@
 import os
 import argparse
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, time
 import win32com.client
 
 # Import from modules
@@ -48,6 +48,16 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
     
     return False
 
+def insert_dict(pDict, pDate, pStart, pEnd):
+    diff = pEnd - pStart
+    if pDict.get(pDate) == None:
+        pDict[pDate] = diff
+    else:
+        pDict[pDate] = pDict[pDate] + diff
+
+def increment_date(pDate):
+    return datetime.combine(pDate + timedelta(days=1), time.min)
+
 ##################################################
 # Main
 ##################################################
@@ -85,16 +95,25 @@ for cal in cal_items:
         prev_start = datetime.min
         prev_end = datetime.min
 
-    diff = curr_end - curr_start
     if curr_start.date() == curr_end.date():
-        if date_dict.get(curr_start.date()) == None:
-            date_dict[curr_start.date()] = diff
-        else:
-            date_dict[curr_start.date()] = date_dict[curr_start.date()] + diff
+        insert_dict(date_dict, curr_start.date(), curr_start, curr_end)
 
     elif curr_start.date() != curr_end.date():
-        pass
+        new_start = increment_date(curr_start.date())
+        insert_dict(date_dict, curr_start.date(), curr_start, new_start)
+        
+        while new_start.date() <= curr_end.date():
+            if new_start.date() == curr_end.date():
+                insert_dict(date_dict, new_start.date(), new_start, curr_end)
+                break
+            elif curr_start.date() != curr_end.date():
+                curr_start = new_start
+                new_start = increment_date(new_start)
+                insert_dict(date_dict, curr_start.date(), curr_start, new_start)
 
     i += 1
+
+for key, value in date_dict.items():
+    print(f"{key} : {value.total_seconds() / 3600}")
 
 finalise_app()

@@ -210,6 +210,7 @@ if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:
+    writer.write("Day,BusyHours,AllDayEvents,Due,Do,Start\n")
     for key, value in date_dict.items():
         writer.write(f"{key},{value}\n")
 logger.info(f"Output written to {CURR_DIR}\{folder}")

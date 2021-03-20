@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, time
 import win32com.client
 
 # Import from modules
-from MyCls import initialise_app, finalise_app, handle_exception, parse_datetime
+from MyMod import initialise_app, finalise_app, handle_exception, parse_datetime
 
 # Initialise project
 CURR_DIR, CURR_FILE = os.path.split(__file__)

@@ -49,15 +49,32 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
     
     return False
 
-def insert_dict(pDict, pDate, pStart, pEnd):
+def insert_dict_hrs(pDict, pDate, pStart, pEnd):
     diff = pEnd - pStart
     if pDict.get(pDate) == None:
         pDict[pDate] = MyCls.Day(diff)
     else:
-        pDict[pDate].busy_hours += + diff
+        pDict[pDate].busy_hours += diff
 
 def increment_date(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)
+
+def calculate_hrs(start, end, pDict):
+    if start.date() == end.date():
+        insert_dict_hrs(pDict, start.date(), start, end)
+
+    elif start.date() != end.date():
+        new_start = increment_date(start.date())
+        insert_dict_hrs(pDict, start.date(), start, new_start)
+        
+        while new_start.date() <= end.date():
+            if new_start.date() == end.date():
+                insert_dict_hrs(pDict, new_start.date(), new_start, end)
+                break
+            elif start.date() != end.date():
+                start = new_start
+                new_start = increment_date(new_start)
+                insert_dict_hrs(pDict, start.date(), start, new_start)
 
 ##################################################
 # Main
@@ -73,53 +90,58 @@ cal_items.Sort("[Start]")
 
 prev_start = datetime.min
 prev_end = datetime.min
+curr_AllDayEvent = False
 i = 0
 for cal in cal_items:
     if cal.AllDayEvent:
-        i += 1
-        continue
-    
-    curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA)
-    curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_VBA)
-    curr_start = curr_start_temp if (prev_start == datetime.min) else (min(prev_start, curr_start_temp))
-    curr_end = curr_end_temp if (prev_end == datetime.min) else (max(prev_end, curr_end_temp))
-    next_start = datetime.min
-    next_end = datetime.min
-    next_AllDayEvent = False
-    try:
-        next_cal = cal_items[i + 1]
-        next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_VBA)
-        next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_VBA)
-        next_AllDayEvent = next_cal.AllDayEvent
-    except IndexError:
-        pass
-
-    if not(next_AllDayEvent) and next_start != datetime.min and next_end != datetime.min and is_conflict(curr_start, curr_end, next_start, next_end):
-        prev_start = curr_start
-        prev_end = curr_end
-        i += 1
-        continue
-    elif next_start != datetime.min and next_end != datetime.min and not(is_conflict(curr_start, curr_end, next_start, next_end)):
-        prev_start = datetime.min
-        prev_end = datetime.min
-
-    if curr_start.date() == curr_end.date():
-        insert_dict(date_dict, curr_start.date(), curr_start, curr_end)
-
-    elif curr_start.date() != curr_end.date():
-        new_start = increment_date(curr_start.date())
-        insert_dict(date_dict, curr_start.date(), curr_start, new_start)
+        curr_AllDayEvent = True
         
-        while new_start.date() <= curr_end.date():
-            if new_start.date() == curr_end.date():
-                insert_dict(date_dict, new_start.date(), new_start, curr_end)
-                break
-            elif curr_start.date() != curr_end.date():
-                curr_start = new_start
-                new_start = increment_date(new_start)
-                insert_dict(date_dict, curr_start.date(), curr_start, new_start)
+    elif not(cal.AllDayEvent):
+        curr_AllDayEvent = False
 
+        curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA)
+        curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_VBA)
+        
+        if not(is_conflict(prev_start, prev_end, curr_start_temp, curr_end_temp)) and prev_start != datetime.min and prev_end != datetime.min:
+            calculate_hrs(prev_start, prev_end, date_dict)
+            prev_start = datetime.min
+            prev_end = datetime.min
+
+        curr_start = curr_start_temp if (prev_start == datetime.min) else (min(prev_start, curr_start_temp))
+        curr_end = curr_end_temp if (prev_end == datetime.min) else (max(prev_end, curr_end_temp))
+        next_start = datetime.min
+        next_end = datetime.min
+        next_AllDayEvent = False
+        try:
+            next_cal = cal_items[i + 1]
+            next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_VBA)
+            next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_VBA)
+            next_AllDayEvent = next_cal.AllDayEvent
+        except IndexError:
+            pass
+
+        if next_AllDayEvent:
+            prev_start = curr_start
+            prev_end = curr_end
+            i += 1
+            continue
+        
+        if next_start != datetime.min and next_end != datetime.min:
+            if is_conflict(curr_start, curr_end, next_start, next_end):
+                prev_start = curr_start
+                prev_end = curr_end
+                i += 1
+                continue
+            else:
+                prev_start = datetime.min
+                prev_end = datetime.min
+
+        calculate_hrs(curr_start, curr_end, date_dict)
+    
     i += 1
+
+if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
+    calculate_hrs(prev_start, prev_end, date_dict)
 
 for key, value in date_dict.items():
     print(f"{key} : {value}")

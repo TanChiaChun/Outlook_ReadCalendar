@@ -7,6 +7,7 @@ import win32com.client
 
 # Import from modules
 from MyMod import initialise_app, finalise_app, handle_exception, parse_datetime
+import MyCls
 
 # Initialise project
 CURR_DIR, CURR_FILE = os.path.split(__file__)
@@ -51,9 +52,9 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
 def insert_dict(pDict, pDate, pStart, pEnd):
     diff = pEnd - pStart
     if pDict.get(pDate) == None:
-        pDict[pDate] = diff
+        pDict[pDate] = MyCls.Day(diff)
     else:
-        pDict[pDate] = pDict[pDate] + diff
+        pDict[pDate].busy_hours = pDict[pDate].busy_hours + diff
 
 def increment_date(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)
@@ -121,6 +122,6 @@ for cal in cal_items:
     i += 1
 
 for key, value in date_dict.items():
-    print(f"{key} : {value.total_seconds() / 3600}")
+    print(f"{key} : {value}")
 
 finalise_app()

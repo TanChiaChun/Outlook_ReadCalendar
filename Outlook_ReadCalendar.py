@@ -15,6 +15,7 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 
 # Get command line arguments
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
+my_arg_parser.add_argument("calfolder", help="Enter list of Calendar folders seperated with ,")
 my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
@@ -37,7 +38,7 @@ DATETIME_FORMAT_FILTER = "%Y-%m-%d %H:%M"
 CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
-outlook_cal_folder = "[Import]"
+outlook_cal_folders = args.calfolder.split(',')
 folder = r"data\python"
 start_date = parse_datetime(parse_datetime(args.startdate, "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
 date_dict = {}
@@ -111,102 +112,113 @@ def calculate_hrs(start, end, pDict):
 # Create output folder if not exists
 os.makedirs(folder, exist_ok=True)
 
-# Init Outlook Calendar folder
+# Init Outlook
 app = win32com.client.Dispatch("Outlook.Application")
 my_namespace = app.GetNamespace("MAPI")
-outlook_folder = my_namespace.GetDefaultFolder(9).Folders(outlook_cal_folder) # 9 for Calendar folder
 
-# Get calendar appointment items filtered by dates
-cal_items = outlook_folder.Items
-cal_items.IncludeRecurrences = True
-cal_items.Sort("[Start]")
-cal_items_filtered = cal_items.Restrict(f"[Start] > '{start_date}'")
-cal_items_filtered.Sort("[Start]")
+# Init Calendar folder
+outlook_folder = my_namespace.GetDefaultFolder(9) # 9 for Calendar folder
 
-# Loop and process appointments
-prev_start = datetime.min
-prev_end = datetime.min
-curr_AllDayEvent = False
-i = 0
-for cal in cal_items_filtered:
-    # Handle AllDayEvent appointments
-    if cal.AllDayEvent:
-        curr_AllDayEvent = True
+# Do-while
+fol_i = -1
+while (fol_i < len(outlook_cal_folders)):
+    # Get calendar appointment items filtered by dates
+    cal_items = outlook_folder.Items
+    cal_items.IncludeRecurrences = True
+    cal_items.Sort("[Start]")
+    cal_items_filtered = cal_items.Restrict(f"[Start] > '{start_date}'")
+    cal_items_filtered.Sort("[Start]")
 
-        curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT).date()
-        curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT).date()).date() # Decrement end date for comparison
+    # Loop and process appointments
+    prev_start = datetime.min
+    prev_end = datetime.min
+    curr_AllDayEvent = False
+    appt_i = 0
+    for cal in cal_items_filtered:
+        # Handle AllDayEvent appointments
+        if cal.AllDayEvent:
+            curr_AllDayEvent = True
 
-        # Update for current date
-        insert_dict_events(date_dict, curr_start_date, cal.Categories)
-        
-        # Loop subsequent dates
-        if curr_start_date != curr_end_date:
-            new_start_date = increment_date(curr_start_date).date()
+            curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT).date()
+            curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT).date()).date() # Decrement end date for comparison
+
+            # Update for current date
+            insert_dict_events(date_dict, curr_start_date, cal.Categories)
             
-            while new_start_date <= curr_end_date:
-                insert_dict_events(date_dict, new_start_date, cal.Categories)
-                if new_start_date == curr_end_date:
-                    break
-                elif new_start_date != curr_end_date:
-                    new_start_date = increment_date(new_start_date).date()
-        
-    # Handle timed appointments
-    elif not(cal.AllDayEvent):
-        curr_AllDayEvent = False
+            # Loop subsequent dates
+            if curr_start_date != curr_end_date:
+                new_start_date = increment_date(curr_start_date).date()
+                
+                while new_start_date <= curr_end_date:
+                    insert_dict_events(date_dict, new_start_date, cal.Categories)
+                    if new_start_date == curr_end_date:
+                        break
+                    elif new_start_date != curr_end_date:
+                        new_start_date = increment_date(new_start_date).date()
+            
+        # Handle timed appointments
+        elif not(cal.AllDayEvent):
+            curr_AllDayEvent = False
 
-        # Get current date for later use
-        curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT)
-        curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT)
-        
-        # Clear previous pending due to next_AllDayEvent skip
-        if not(is_conflict(prev_start, prev_end, curr_start_temp, curr_end_temp)) and prev_start != datetime.min and prev_end != datetime.min:
-            calculate_hrs(prev_start, prev_end, date_dict)
-            prev_start = datetime.min
-            prev_end = datetime.min
-
-        # Initialise current and next appointment details
-        curr_start = curr_start_temp if (prev_start == datetime.min) else (min(prev_start, curr_start_temp))
-        curr_end = curr_end_temp if (prev_end == datetime.min) else (max(prev_end, curr_end_temp))
-        next_start = datetime.min
-        next_end = datetime.min
-        next_AllDayEvent = False
-        try:
-            next_cal = cal_items_filtered[i + 1]
-            next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_OUTPUT)
-            next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_OUTPUT)
-            next_AllDayEvent = next_cal.AllDayEvent
-        except IndexError:
-            pass
-
-        # Skip if next appointment is AllDayEvent (for conflict management with subsequent timed events) + update prev start end
-        if next_AllDayEvent:
-            prev_start = curr_start
-            prev_end = curr_end
-            i += 1
-            continue
-        
-        # Check if next appointment exists (is current appointment last)
-        if next_start != datetime.min and next_end != datetime.min:
-            # Skip if conflict with next timed appointment + update prev start end
-            if is_conflict(curr_start, curr_end, next_start, next_end):
-                prev_start = curr_start
-                prev_end = curr_end
-                i += 1
-                continue
-            # Reset prev start end if no conflict
-            else:
+            # Get current date for later use
+            curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT)
+            curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT)
+            
+            # Clear previous pending due to next_AllDayEvent skip
+            if not(is_conflict(prev_start, prev_end, curr_start_temp, curr_end_temp)) and prev_start != datetime.min and prev_end != datetime.min:
+                calculate_hrs(prev_start, prev_end, date_dict)
                 prev_start = datetime.min
                 prev_end = datetime.min
 
-        # Process accumulated hours range
-        calculate_hrs(curr_start, curr_end, date_dict)
-    
-    i += 1
-logger.info(f"Processed {i} appointments")
+            # Initialise current and next appointment details
+            curr_start = curr_start_temp if (prev_start == datetime.min) else (min(prev_start, curr_start_temp))
+            curr_end = curr_end_temp if (prev_end == datetime.min) else (max(prev_end, curr_end_temp))
+            next_start = datetime.min
+            next_end = datetime.min
+            next_AllDayEvent = False
+            try:
+                next_cal = cal_items_filtered[appt_i + 1]
+                next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_OUTPUT)
+                next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_OUTPUT)
+                next_AllDayEvent = next_cal.AllDayEvent
+            except IndexError:
+                pass
 
-# Handle skip if last appointment is AllDayEvent
-if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
-    calculate_hrs(prev_start, prev_end, date_dict)
+            # Skip if next appointment is AllDayEvent (for conflict management with subsequent timed events) + update prev start end
+            if next_AllDayEvent:
+                prev_start = curr_start
+                prev_end = curr_end
+                appt_i += 1
+                continue
+            
+            # Check if next appointment exists (is current appointment last)
+            if next_start != datetime.min and next_end != datetime.min:
+                # Skip if conflict with next timed appointment + update prev start end
+                if is_conflict(curr_start, curr_end, next_start, next_end):
+                    prev_start = curr_start
+                    prev_end = curr_end
+                    appt_i += 1
+                    continue
+                # Reset prev start end if no conflict
+                else:
+                    prev_start = datetime.min
+                    prev_end = datetime.min
+
+            # Process accumulated hours range
+            calculate_hrs(curr_start, curr_end, date_dict)
+        
+        appt_i += 1
+
+    # Handle skip if last appointment is AllDayEvent
+    if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
+        calculate_hrs(prev_start, prev_end, date_dict)
+    
+    logger.info(f"Processed {appt_i} appointments from {outlook_folder.Name}")
+    
+    fol_i += 1
+    if fol_i >= len(outlook_cal_folders):
+        break
+    outlook_folder = my_namespace.GetDefaultFolder(9).Folders(outlook_cal_folders[fol_i]) # 9 for Calendar folder
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:

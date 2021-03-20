@@ -108,19 +108,16 @@ for cal in cal_items:
         curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA).date()
         curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_VBA).date()).date()
 
-        if curr_start_date == curr_end_date:
-            insert_dict_events(date_dict, curr_start_date)
+        insert_dict_events(date_dict, curr_start_date)
         
-        elif curr_start_date != curr_end_date:
-            insert_dict_events(date_dict, curr_start_date)
+        if curr_start_date != curr_end_date:
             new_start_date = increment_date(curr_start_date).date()
             
             while new_start_date <= curr_end_date:
+                insert_dict_events(date_dict, new_start_date)
                 if new_start_date == curr_end_date:
-                    insert_dict_events(date_dict, new_start_date)
                     break
                 elif new_start_date != curr_end_date:
-                    insert_dict_events(date_dict, new_start_date)
                     new_start_date = increment_date(new_start_date).date()
         
     elif not(cal.AllDayEvent):

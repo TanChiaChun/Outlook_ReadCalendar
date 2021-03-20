@@ -33,7 +33,7 @@ logger = logging.getLogger("my_logger")
 ##################################################
 DATETIME_FORMAT_VBA = "%Y-%m-%d %H:%M:%S+00:00"
 date_dict = {}
-outlook_cal_folder = "[Recurring]"
+outlook_cal_folder = "[Import]"
 
 ##################################################
 # Functions
@@ -74,19 +74,26 @@ prev_start = datetime.min
 prev_end = datetime.min
 i = 0
 for cal in cal_items:
+    if cal.AllDayEvent:
+        i += 1
+        continue
+    
     curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA)
     curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_VBA)
     curr_start = curr_start_temp if (prev_start == datetime.min) else (min(prev_start, curr_start_temp))
     curr_end = curr_end_temp if (prev_end == datetime.min) else (max(prev_end, curr_end_temp))
     next_start = datetime.min
     next_end = datetime.min
+    next_AllDayEvent = False
     try:
-        next_start = parse_datetime(str(cal_items[i + 1].Start), DATETIME_FORMAT_VBA)
-        next_end = parse_datetime(str(cal_items[i + 1].End), DATETIME_FORMAT_VBA)
+        next_cal = cal_items[i + 1]
+        next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_VBA)
+        next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_VBA)
+        next_AllDayEvent = next_cal.AllDayEvent
     except IndexError:
         pass
 
-    if next_start != datetime.min and next_end != datetime.min and is_conflict(curr_start, curr_end, next_start, next_end):
+    if not(next_AllDayEvent) and next_start != datetime.min and next_end != datetime.min and is_conflict(curr_start, curr_end, next_start, next_end):
         prev_start = curr_start
         prev_end = curr_end
         i += 1

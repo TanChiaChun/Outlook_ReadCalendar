@@ -38,6 +38,7 @@ CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
 outlook_cal_folder = "[Import]"
+folder = "data/python"
 start_date = parse_datetime(parse_datetime(args.startdate, "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
 date_dict = {}
 
@@ -107,6 +108,8 @@ def calculate_hrs(start, end, pDict):
 ##################################################
 # Main
 ##################################################
+os.makedirs(folder, exist_ok=True)
+
 # Init Outlook Calendar folder
 app = win32com.client.Dispatch("Outlook.Application")
 my_namespace = app.GetNamespace("MAPI")
@@ -188,7 +191,8 @@ for cal in cal_items_filtered:
 if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
     calculate_hrs(prev_start, prev_end, date_dict)
 
-for key, value in date_dict.items():
-    print(f"{key} : {value}")
+with open(f"{folder}/calendar_cal.txt", 'w') as writer:
+    for key, value in date_dict.items():
+        writer.write(f"{key},{value}\n")
 
 finalise_app()

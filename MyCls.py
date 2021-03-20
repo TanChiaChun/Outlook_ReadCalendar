@@ -7,4 +7,4 @@ class Day:
         self.start = start
     
     def __str__(self):
-        return f"{self.busy_hours.total_seconds() / 3600} busy hours & {self.all_day_events} all day events & {self.due} Due & {self.do} Do & {self.start} Start"
+        return f"{self.busy_hours.total_seconds() / 3600},{self.all_day_events},{self.due},{self.do},{self.start}"

@@ -33,6 +33,9 @@ logger = logging.getLogger("my_logger")
 # Variables
 ##################################################
 DATETIME_FORMAT_VBA = "%Y-%m-%d %H:%M:%S+00:00"
+CAT_DUE = "Task_Due"
+CAT_DO = "Task_Do"
+CAT_START = "Task_Start"
 date_dict = {}
 outlook_cal_folder = "[Import]"
 
@@ -52,15 +55,29 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
 def insert_dict_hrs(pDict, pDate, pStart, pEnd):
     diff = pEnd - pStart
     if pDict.get(pDate) == None:
-        pDict[pDate] = MyCls.Day(diff, 0)
+        pDict[pDate] = MyCls.Day(diff, 0, 0, 0, 0)
     else:
         pDict[pDate].busy_hours += diff
 
-def insert_dict_events(pDict, pDate):
+def insert_dict_events(pDict, pDate, pCat):
     if pDict.get(pDate) == None:
-        pDict[pDate] = MyCls.Day(timedelta(), 1)
+        if pCat == CAT_DUE:
+            pDict[pDate] = MyCls.Day(timedelta(), 0, 1, 0, 0)
+        elif pCat == CAT_DO:
+            pDict[pDate] = MyCls.Day(timedelta(), 0, 0, 1, 0)
+        elif pCat == CAT_START:
+            pDict[pDate] = MyCls.Day(timedelta(), 0, 0, 0, 1)
+        else:
+            pDict[pDate] = MyCls.Day(timedelta(), 1, 0, 0, 0)
     else:
-        pDict[pDate].all_day_events += 1
+        if pCat == CAT_DUE:
+            pDict[pDate].due += 1
+        elif pCat == CAT_DO:
+            pDict[pDate].do += 1
+        elif pCat == CAT_START:
+            pDict[pDate].start += 1
+        else:
+            pDict[pDate].all_day_events += 1
 
 def increment_date(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)
@@ -108,13 +125,13 @@ for cal in cal_items:
         curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_VBA).date()
         curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_VBA).date()).date()
 
-        insert_dict_events(date_dict, curr_start_date)
+        insert_dict_events(date_dict, curr_start_date, cal.Categories)
         
         if curr_start_date != curr_end_date:
             new_start_date = increment_date(curr_start_date).date()
             
             while new_start_date <= curr_end_date:
-                insert_dict_events(date_dict, new_start_date)
+                insert_dict_events(date_dict, new_start_date, cal.Categories)
                 if new_start_date == curr_end_date:
                     break
                 elif new_start_date != curr_end_date:

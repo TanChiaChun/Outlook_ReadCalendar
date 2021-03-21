@@ -16,6 +16,7 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 # Get command line arguments
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
 my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
+my_arg_parser.add_argument("enddate", help="Enter start date in %Y-%m-%d format")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
 
@@ -39,7 +40,6 @@ CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
 folder = r"data\python"
-start_date = (datetime.strptime(args.startdate, DATETIME_FORMAT_ARG) - timedelta(seconds=1)).strftime(DATETIME_FORMAT_VBA_FILTER)
 date_dict = {}
 
 ##################################################
@@ -82,6 +82,9 @@ def insert_dict_events(pDict, pDate, pCat):
         else:
             pDict[pDate].all_day_events += 1
 
+def process_arg_date(date_str, day_delta):
+    return (datetime.strptime(date_str, DATETIME_FORMAT_ARG) + timedelta(days=day_delta)).strftime(DATETIME_FORMAT_VBA_FILTER)
+
 def vbaDatetime_to_pyDatetime(pDateTime):
     return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT)
 
@@ -114,6 +117,9 @@ def calculate_hrs(start, end, pDict):
 # Create output folder if not exists
 os.makedirs(folder, exist_ok=True)
 
+start_date = process_arg_date(args.startdate, 0)
+end_date = process_arg_date(args.enddate, 1)
+
 # Init Outlook
 app = win32com.client.Dispatch("Outlook.Application")
 my_namespace = app.GetNamespace("MAPI")
@@ -133,7 +139,7 @@ while (fol_i < len(outlook_cal_folders)):
     cal_items = outlook_cal_folder.Items
     cal_items.IncludeRecurrences = True
     cal_items.Sort("[Start]")
-    cal_items_filtered = cal_items.Restrict(f"[Start] > '{start_date}'")
+    cal_items_filtered = cal_items.Restrict(f"[Start] >= '{start_date}' And [End] <= '{end_date}'")
     cal_items_filtered.Sort("[Start]")
 
     # Loop and process appointments

@@ -72,12 +72,12 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
     
     return False
 
-def insert_dict_hrs(pDict, pDate, pStart, pEnd):
+def insert_dict_hrs(pDate, pStart, pEnd):
     diff = pEnd - pStart
-    if pDict.get(pDate) == None:
-        pDict[pDate] = MyCls.Day(diff, 0, 0, 0, 0)
+    if date_dict.get(pDate) == None:
+        date_dict[pDate] = MyCls.Day(diff, 0, 0, 0, 0)
     else:
-        pDict[pDate].busy_hours += diff
+        date_dict[pDate].busy_hours += diff
 
 def insert_dict_events(pDict, pDate, pCat):
     if pDict.get(pDate) == None:
@@ -99,22 +99,15 @@ def insert_dict_events(pDict, pDate, pCat):
         else:
             pDict[pDate].all_day_events += 1
 
-def calculate_hrs(start, end, pDict):
+def calculate_hrs(start, end):
     if start.date() == end.date():
-        insert_dict_hrs(pDict, start.date(), start, end)
+        insert_dict_hrs(start.date(), start, end)
+        return
 
-    elif start.date() != end.date():
-        new_start = increment_date_to_datetime(start.date())
-        insert_dict_hrs(pDict, start.date(), start, new_start)
-        
-        while new_start.date() <= end.date():
-            if new_start.date() == end.date():
-                insert_dict_hrs(pDict, new_start.date(), new_start, end)
-                break
-            elif new_start.date() != end.date():
-                start = new_start
-                new_start = increment_date_to_datetime(new_start.date())
-                insert_dict_hrs(pDict, start.date(), start, new_start)
+    new_start = increment_date_to_datetime(start.date())
+    insert_dict_hrs(start.date(), start, new_start)
+
+    calculate_hrs(new_start, end)
 
 ##################################################
 # Main
@@ -203,7 +196,7 @@ for x in range(len(appts)):
         
         # Clear previous pending due to next_AllDayEvent skip
         if not(is_conflict(prev_start, prev_end, curr_start_temp, curr_end_temp)) and prev_start != datetime.min and prev_end != datetime.min:
-            calculate_hrs(prev_start, prev_end, date_dict)
+            calculate_hrs(prev_start, prev_end)
             prev_start = datetime.min
             prev_end = datetime.min
 
@@ -238,11 +231,11 @@ for x in range(len(appts)):
                 prev_end = datetime.min
 
         # Process accumulated hours range
-        calculate_hrs(curr_start, curr_end, date_dict)
+        calculate_hrs(curr_start, curr_end)
 
 # Handle skip if last appointment is AllDayEvent
 if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
-    calculate_hrs(prev_start, prev_end, date_dict)
+    calculate_hrs(prev_start, prev_end)
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:

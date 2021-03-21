@@ -52,29 +52,9 @@ def is_internet_connected():
     except Exception:
         return False
 
-def parse_datetime(dt_input, input_format="", output_format=""):
-    dt = dt_input
-    if type(dt_input) == str:
-        dt = datetime.strptime(dt_input, input_format)
-    
-    if output_format != "":
-        return dt.strftime(output_format)
-    return dt
-
-def str_to_bool(bool_str):
-    if bool_str == "True":
-        return True
-    return False
-
 def wait_file_exist(file_path, my_timeout):
     for i in range(my_timeout):
         if os.path.isfile(file_path):
             return True
         sleep(1)
     return False
-
-def del_file(file_path):
-    try:
-        os.remove(file_path)
-    except FileNotFoundError:
-        logger.error("File not found!")

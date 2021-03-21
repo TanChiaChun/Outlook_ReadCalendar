@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, time
 import win32com.client
 
 # Import from modules
-from MyMod import initialise_app, finalise_app, handle_exception, parse_datetime
+from MyMod import initialise_app, finalise_app, handle_exception
 import MyCls
 
 # Initialise project
@@ -32,13 +32,14 @@ logger = logging.getLogger("my_logger")
 ##################################################
 # Variables
 ##################################################
-DATETIME_FORMAT_OUTPUT = "%Y-%m-%d %H:%M:%S+00:00"
-DATETIME_FORMAT_FILTER = "%Y-%m-%d %H:%M"
+DATETIME_FORMAT_ARG = "%Y-%m-%d"
+DATETIME_FORMAT_VBA_FILTER = "%Y-%m-%d %H:%M"
+DATETIME_FORMAT_VBA_OUTPUT = "%Y-%m-%d %H:%M:%S+00:00"
 CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
 folder = r"data\python"
-start_date = parse_datetime(parse_datetime(args.startdate, "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
+start_date = (datetime.strptime(args.startdate, DATETIME_FORMAT_ARG) - timedelta(seconds=1)).strftime(DATETIME_FORMAT_VBA_FILTER)
 date_dict = {}
 
 ##################################################
@@ -80,6 +81,9 @@ def insert_dict_events(pDict, pDate, pCat):
             pDict[pDate].start += 1
         else:
             pDict[pDate].all_day_events += 1
+
+def vbaDatetime_to_pyDatetime(pDateTime):
+    return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT)
 
 def increment_date(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)
@@ -142,8 +146,8 @@ while (fol_i < len(outlook_cal_folders)):
         if cal.AllDayEvent:
             curr_AllDayEvent = True
 
-            curr_start_date = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT).date()
-            curr_end_date = decrement_date(parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT).date()).date() # Decrement end date for comparison
+            curr_start_date = vbaDatetime_to_pyDatetime(cal.Start).date()
+            curr_end_date = decrement_date(vbaDatetime_to_pyDatetime(cal.End).date()).date() # Decrement end date for comparison
 
             # Update for current date
             insert_dict_events(date_dict, curr_start_date, cal.Categories)
@@ -164,8 +168,8 @@ while (fol_i < len(outlook_cal_folders)):
             curr_AllDayEvent = False
 
             # Get current date for later use
-            curr_start_temp = parse_datetime(str(cal.Start), DATETIME_FORMAT_OUTPUT)
-            curr_end_temp = parse_datetime(str(cal.End), DATETIME_FORMAT_OUTPUT)
+            curr_start_temp = vbaDatetime_to_pyDatetime(cal.Start)
+            curr_end_temp = vbaDatetime_to_pyDatetime(cal.End)
             
             # Clear previous pending due to next_AllDayEvent skip
             if not(is_conflict(prev_start, prev_end, curr_start_temp, curr_end_temp)) and prev_start != datetime.min and prev_end != datetime.min:
@@ -181,8 +185,8 @@ while (fol_i < len(outlook_cal_folders)):
             next_AllDayEvent = False
             try:
                 next_cal = cal_items_filtered[appt_i + 1]
-                next_start = parse_datetime(str(next_cal.Start), DATETIME_FORMAT_OUTPUT)
-                next_end = parse_datetime(str(next_cal.End), DATETIME_FORMAT_OUTPUT)
+                next_start = vbaDatetime_to_pyDatetime(next_cal.Start)
+                next_end = vbaDatetime_to_pyDatetime(next_cal.End)
                 next_AllDayEvent = next_cal.AllDayEvent
             except IndexError:
                 pass

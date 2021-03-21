@@ -229,7 +229,7 @@ for x in range(len(appts_all_day)):
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:
-    writer.write("Day,BusyHours,AllDayEvents,Due,Do,Start\n")
+    writer.write("Day,BusyHours,AllDayEvents,Due,Do,Start,OutOfOffice\n")
     for key, value in date_dict.items():
         writer.write(f"{key},{value}\n")
 logger.info(f"Output written to {CURR_DIR}\{folder}")

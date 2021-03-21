@@ -85,10 +85,10 @@ def insert_dict_events(pDict, pDate, pCat):
 def vbaDatetime_to_pyDatetime(pDateTime):
     return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT)
 
-def increment_date(pDate):
+def increment_date_to_datetime(pDate):
     return datetime.combine(pDate + timedelta(days=1), time.min)
 
-def decrement_date(pDate):
+def decrement_date_to_datetime(pDate):
     return datetime.combine(pDate - timedelta(days=1), time.min)
 
 def calculate_hrs(start, end, pDict):
@@ -96,7 +96,7 @@ def calculate_hrs(start, end, pDict):
         insert_dict_hrs(pDict, start.date(), start, end)
 
     elif start.date() != end.date():
-        new_start = increment_date(start.date())
+        new_start = increment_date_to_datetime(start.date())
         insert_dict_hrs(pDict, start.date(), start, new_start)
         
         while new_start.date() <= end.date():
@@ -105,7 +105,7 @@ def calculate_hrs(start, end, pDict):
                 break
             elif new_start.date() != end.date():
                 start = new_start
-                new_start = increment_date(new_start.date())
+                new_start = increment_date_to_datetime(new_start.date())
                 insert_dict_hrs(pDict, start.date(), start, new_start)
 
 ##################################################
@@ -147,21 +147,21 @@ while (fol_i < len(outlook_cal_folders)):
             curr_AllDayEvent = True
 
             curr_start_date = vbaDatetime_to_pyDatetime(cal.Start).date()
-            curr_end_date = decrement_date(vbaDatetime_to_pyDatetime(cal.End).date()).date() # Decrement end date for comparison
+            curr_end_date = decrement_date_to_datetime(vbaDatetime_to_pyDatetime(cal.End).date()).date() # Decrement end date for comparison
 
             # Update for current date
             insert_dict_events(date_dict, curr_start_date, cal.Categories)
             
             # Loop subsequent dates
             if curr_start_date != curr_end_date:
-                new_start_date = increment_date(curr_start_date).date()
+                new_start_date = increment_date_to_datetime(curr_start_date).date()
                 
                 while new_start_date <= curr_end_date:
                     insert_dict_events(date_dict, new_start_date, cal.Categories)
                     if new_start_date == curr_end_date:
                         break
                     elif new_start_date != curr_end_date:
-                        new_start_date = increment_date(new_start_date).date()
+                        new_start_date = increment_date_to_datetime(new_start_date).date()
             
         # Handle timed appointments
         elif not(cal.AllDayEvent):

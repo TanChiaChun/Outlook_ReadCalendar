@@ -139,10 +139,11 @@ for c_folder in outlook_cal_folder.Folders:
 # Do-while
 fol_i = -1
 while (fol_i < len(outlook_cal_folders)):
-    # Get calendar appointment items filtered by dates
+    # Get calendar appointment items
     cal_items = outlook_cal_folder.Items
     cal_items.IncludeRecurrences = True
 
+    # Filter calendar appointment items by dates
     appt_count = 0
     for cal in cal_items:
         c_start = vbaDatetimeUtc_to_pyDatetime(cal.StartUTC)

@@ -48,6 +48,18 @@ date_dict = {}
 ##################################################
 # Functions
 ##################################################
+def process_arg_date(date_str, day_delta):
+    return datetime.strptime(date_str, DATETIME_FORMAT_ARG) + timedelta(days=day_delta)
+
+def vbaDatetimeUtc_to_pyDatetime(pDateTime):
+    return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT) + timedelta(hours=8)
+
+def increment_date_to_datetime(pDate):
+    return datetime.combine(pDate + timedelta(days=1), time.min)
+
+def decrement_date_to_datetime(pDate):
+    return datetime.combine(pDate - timedelta(days=1), time.min)
+
 def is_conflict(curr_start, curr_end, next_start, next_end):
     if curr_start > next_start and curr_start < next_end and curr_end > next_end:
         return True
@@ -86,18 +98,6 @@ def insert_dict_events(pDict, pDate, pCat):
             pDict[pDate].start += 1
         else:
             pDict[pDate].all_day_events += 1
-
-def process_arg_date(date_str, day_delta):
-    return datetime.strptime(date_str, DATETIME_FORMAT_ARG) + timedelta(days=day_delta)
-
-def vbaDatetimeUtc_to_pyDatetime(pDateTime):
-    return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT) + timedelta(hours=8)
-
-def increment_date_to_datetime(pDate):
-    return datetime.combine(pDate + timedelta(days=1), time.min)
-
-def decrement_date_to_datetime(pDate):
-    return datetime.combine(pDate - timedelta(days=1), time.min)
 
 def calculate_hrs(start, end, pDict):
     if start.date() == end.date():

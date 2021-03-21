@@ -160,7 +160,7 @@ while (fol_i < len(outlook_cal_folders)):
         cEnd = vbaDatetimeUtc_to_pyDatetime(cal.EndUTC)
         if cStart >= start_date and cEnd <= end_date:
             if not(cal.AllDayEvent):
-                appts.append(MyCls.Appointment(cStart, cEnd, False, cal.Categories))
+                appts.append(MyCls.Appointment(cStart, cEnd, False, ""))
                 appt_count += 1
             elif cal.AllDayEvent:
                 appts_all_day.append(MyCls.Appointment(cStart, cEnd, True, cal.Categories))

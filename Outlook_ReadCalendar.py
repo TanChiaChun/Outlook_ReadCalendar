@@ -76,29 +76,36 @@ def is_conflict(pStart_curr, pEnd_curr, pStart_next, pEnd_next):
 def insert_dict_hrs(pDate, pStart, pEnd):
     diff = pEnd - pStart
     if date_dict.get(pDate) == None:
-        date_dict[pDate] = MyCls.Day(diff, 0, 0, 0, 0)
+        date_dict[pDate] = MyCls.Day(diff, 0, 0, 0, 0, False)
     else:
         date_dict[pDate].busy_hours += diff
 
-def insert_dict_events(pDate, pCat):
+def insert_dict_events(pDate, pCat, pIs_out_of_office):
     if date_dict.get(pDate) == None:
-        if pCat == CAT_DUE:
-            date_dict[pDate] = MyCls.Day(timedelta(), 0, 1, 0, 0)
-        elif pCat == CAT_DO:
-            date_dict[pDate] = MyCls.Day(timedelta(), 0, 0, 1, 0)
-        elif pCat == CAT_START:
-            date_dict[pDate] = MyCls.Day(timedelta(), 0, 0, 0, 1)
-        else:
-            date_dict[pDate] = MyCls.Day(timedelta(), 1, 0, 0, 0)
+        if pIs_out_of_office:
+            date_dict[pDate] = MyCls.Day(timedelta(), 0, 0, 0, 0, pIs_out_of_office)
+        elif not(pIs_out_of_office):
+            if pCat == CAT_DUE:
+                date_dict[pDate] = MyCls.Day(timedelta(), 0, 1, 0, 0, False)
+            elif pCat == CAT_DO:
+                date_dict[pDate] = MyCls.Day(timedelta(), 0, 0, 1, 0, False)
+            elif pCat == CAT_START:
+                date_dict[pDate] = MyCls.Day(timedelta(), 0, 0, 0, 1, False)
+            else:
+                date_dict[pDate] = MyCls.Day(timedelta(), 1, 0, 0, 0, False)
+                
     else:
-        if pCat == CAT_DUE:
-            date_dict[pDate].due += 1
-        elif pCat == CAT_DO:
-            date_dict[pDate].do += 1
-        elif pCat == CAT_START:
-            date_dict[pDate].start += 1
-        else:
-            date_dict[pDate].all_day_events += 1
+        if pIs_out_of_office:
+            date_dict[pDate].is_out_of_office = True
+        elif not(pIs_out_of_office):
+            if pCat == CAT_DUE:
+                date_dict[pDate].due += 1
+            elif pCat == CAT_DO:
+                date_dict[pDate].do += 1
+            elif pCat == CAT_START:
+                date_dict[pDate].start += 1
+            else:
+                date_dict[pDate].all_day_events += 1
 
 def calculate_hrs(pStart, pEnd):
     if pStart.date() == pEnd.date():
@@ -110,15 +117,15 @@ def calculate_hrs(pStart, pEnd):
 
     calculate_hrs(new_start, pEnd)
 
-def count_all_days(pStart_date, pEnd_date, pCat):
-    insert_dict_events(pStart_date, pCat)
+def count_all_days(pStart_date, pEnd_date, pCat, pIs_out_of_office):
+    insert_dict_events(pStart_date, pCat, pIs_out_of_office)
 
     if pStart_date == pEnd_date:
         return
 
     new_start_date = increment_date_to_datetime(curr_start_date).date()
 
-    count_all_days(new_start_date, pEnd_date, pCat)
+    count_all_days(new_start_date, pEnd_date, pCat, pIs_out_of_office)
 
 ##################################################
 # Main
@@ -160,10 +167,11 @@ while (fol_i < len(outlook_cal_folders)):
         cEnd = vbaDatetimeUtc_to_pyDatetime(cal.EndUTC)
         if cStart >= start_date and cEnd <= end_date:
             if not(cal.AllDayEvent):
-                appts.append(MyCls.Appointment(cStart, cEnd, False, ""))
+                appts.append(MyCls.Appointment(cStart, cEnd, False, "", False))
                 appt_count += 1
             elif cal.AllDayEvent:
-                appts_all_day.append(MyCls.Appointment(cStart, cEnd, True, cal.Categories))
+                cIs_out_of_office = True if (cal.BusyStatus == 3) else False
+                appts_all_day.append(MyCls.Appointment(cStart, cEnd, True, cal.Categories, cIs_out_of_office))
                 appt_all_day_count += 1
 
     logger.info(f"Extracted {appt_count} appointments & {appt_all_day_count} all days from {outlook_cal_folder.Name}")
@@ -216,8 +224,8 @@ for x in range(len(appts)):
 for x in range(len(appts_all_day)):
     curr_start_date = appts_all_day[x].start.date()
     curr_end_date = decrement_date_to_datetime(appts_all_day[x].end.date()).date() # Decrement end date for comparison
-
-    count_all_days(curr_start_date, curr_end_date, appts_all_day[x].cat)
+    
+    count_all_days(curr_start_date, curr_end_date, appts_all_day[x].cat, appts_all_day[x].is_out_of_office)
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:

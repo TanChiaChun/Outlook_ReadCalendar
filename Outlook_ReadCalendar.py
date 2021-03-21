@@ -35,7 +35,6 @@ logger = logging.getLogger("my_logger")
 # Variables
 ##################################################
 DATETIME_FORMAT_ARG = "%Y-%m-%d"
-DATETIME_FORMAT_VBA_FILTER = "%Y-%m-%d %H:%M"
 DATETIME_FORMAT_VBA_OUTPUT = "%Y-%m-%d %H:%M:%S+00:00"
 CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
@@ -87,7 +86,7 @@ def insert_dict_events(pDict, pDate, pCat):
             pDict[pDate].all_day_events += 1
 
 def process_arg_date(date_str, day_delta):
-    return (datetime.strptime(date_str, DATETIME_FORMAT_ARG) + timedelta(days=day_delta)).strftime(DATETIME_FORMAT_VBA_FILTER)
+    return datetime.strptime(date_str, DATETIME_FORMAT_ARG) + timedelta(days=day_delta)
 
 def vbaDatetimeUtc_to_pyDatetime(pDateTime):
     return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT) + timedelta(hours=8)
@@ -139,18 +138,18 @@ for c_folder in outlook_cal_folder.Folders:
 
 # Do-while
 fol_i = -1
-appt_count = 0
 while (fol_i < len(outlook_cal_folders)):
     # Get calendar appointment items filtered by dates
     cal_items = outlook_cal_folder.Items
     cal_items.IncludeRecurrences = True
-    # cal_items.Sort("[Start]")
-    cal_items_filtered = cal_items.Restrict(f"[Start] >= '{start_date}' And [End] <= '{end_date}'")
-    # cal_items_filtered.Sort("[Start]")
 
-    for cal in cal_items_filtered:
-        appts.append(MyCls.Appointment(vbaDatetimeUtc_to_pyDatetime(cal.StartUTC), vbaDatetimeUtc_to_pyDatetime(cal.EndUTC), cal.AllDayEvent, cal.Categories))
-        appt_count += 1
+    appt_count = 0
+    for cal in cal_items:
+        c_start = vbaDatetimeUtc_to_pyDatetime(cal.StartUTC)
+        c_end = vbaDatetimeUtc_to_pyDatetime(cal.EndUTC)
+        if c_start >= start_date and c_end <= end_date:
+            appts.append(MyCls.Appointment(c_start, c_end, cal.AllDayEvent, cal.Categories))
+            appt_count += 1
 
     logger.info(f"Extracted {appt_count} appointments from {outlook_cal_folder.Name}")
     

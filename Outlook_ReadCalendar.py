@@ -123,7 +123,7 @@ def count_all_days(pStart_date, pEnd_date, pCat, pIs_out_of_office):
     if pStart_date == pEnd_date:
         return
 
-    new_start_date = increment_date_to_datetime(curr_start_date).date()
+    new_start_date = increment_date_to_datetime(pStart_date).date()
 
     count_all_days(new_start_date, pEnd_date, pCat, pIs_out_of_office)
 

@@ -52,6 +52,8 @@ def is_conflict(curr_start, curr_end, next_start, next_end):
         return True
     elif curr_start <= next_start and curr_end >= next_end:
         return True
+    elif curr_start >= next_start and curr_end <= next_end:
+        return True
     elif curr_start < next_start and curr_end > next_start and curr_end < next_end:
         return True
     

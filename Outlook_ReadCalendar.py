@@ -17,7 +17,8 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 # Get command line arguments
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
 my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
-my_arg_parser.add_argument("enddate", help="Enter start date in %Y-%m-%d format")
+my_arg_parser.add_argument("enddate", help="Enter end date in %Y-%m-%d format")
+my_arg_parser.add_argument("exclude_prefix", help="Populate list of prefix strings for excluding appointments, delimit with ','")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
 
@@ -40,6 +41,7 @@ CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
 folder = r"data\python"
+exclude_prefixes = args.exclude_prefix.split(',')
 appts = []
 date_dict = {}
 
@@ -146,6 +148,9 @@ while (fol_i < len(outlook_cal_folders)):
     # Filter calendar appointment items by dates
     appt_count = 0
     for cal in cal_items:
+        if cal.Subject.startswith(tuple(exclude_prefixes)):
+            continue
+
         c_start = vbaDatetimeUtc_to_pyDatetime(cal.StartUTC)
         c_end = vbaDatetimeUtc_to_pyDatetime(cal.EndUTC)
         if c_start >= start_date and c_end <= end_date:

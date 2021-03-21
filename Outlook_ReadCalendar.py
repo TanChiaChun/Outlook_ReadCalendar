@@ -15,7 +15,6 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 
 # Get command line arguments
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
-my_arg_parser.add_argument("calfolder", help="Enter list of Calendar folders seperated with ,")
 my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
@@ -38,7 +37,6 @@ DATETIME_FORMAT_FILTER = "%Y-%m-%d %H:%M"
 CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
-outlook_cal_folders = args.calfolder.split(',')
 folder = r"data\python"
 start_date = parse_datetime(parse_datetime(args.startdate, "%Y-%m-%d") - timedelta(seconds=1), "", DATETIME_FORMAT_FILTER)
 date_dict = {}
@@ -117,13 +115,18 @@ app = win32com.client.Dispatch("Outlook.Application")
 my_namespace = app.GetNamespace("MAPI")
 
 # Init Calendar folder
-outlook_folder = my_namespace.GetDefaultFolder(9) # 9 for Calendar folder
+outlook_cal_folder = my_namespace.GetDefaultFolder(9) # 9 for Calendar folder
+
+# Get Calendar sub-folders
+outlook_cal_folders = []
+for c_folder in outlook_cal_folder.Folders:
+    outlook_cal_folders.append(c_folder.Name)
 
 # Do-while
 fol_i = -1
 while (fol_i < len(outlook_cal_folders)):
     # Get calendar appointment items filtered by dates
-    cal_items = outlook_folder.Items
+    cal_items = outlook_cal_folder.Items
     cal_items.IncludeRecurrences = True
     cal_items.Sort("[Start]")
     cal_items_filtered = cal_items.Restrict(f"[Start] > '{start_date}'")
@@ -213,12 +216,12 @@ while (fol_i < len(outlook_cal_folders)):
     if curr_AllDayEvent and prev_start != datetime.min and prev_end != datetime.min:
         calculate_hrs(prev_start, prev_end, date_dict)
     
-    logger.info(f"Processed {appt_i} appointments from {outlook_folder.Name}")
+    logger.info(f"Processed {appt_i} appointments from {outlook_cal_folder.Name}")
     
     fol_i += 1
     if fol_i >= len(outlook_cal_folders):
         break
-    outlook_folder = my_namespace.GetDefaultFolder(9).Folders(outlook_cal_folders[fol_i]) # 9 for Calendar folder
+    outlook_cal_folder = my_namespace.GetDefaultFolder(9).Folders(outlook_cal_folders[fol_i]) # 9 for Calendar folder
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:

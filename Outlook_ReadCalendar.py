@@ -222,11 +222,11 @@ for x in range(len(appts)):
     calculate_hrs(curr_start, curr_end)
 
 # Loop and count all days
-for x in range(len(appts_all_day)):
-    curr_start_date = appts_all_day[x].start.date()
-    curr_end_date = decrement_date_to_datetime(appts_all_day[x].end.date()).date() # Decrement end date for comparison
+for appt in appts_all_day:
+    curr_start_date = appt.start.date()
+    curr_end_date = decrement_date_to_datetime(appt.end.date()).date() # Decrement end date for comparison
     
-    count_all_days(curr_start_date, curr_end_date, appts_all_day[x].cat, appts_all_day[x].is_out_of_office)
+    count_all_days(curr_start_date, curr_end_date, appt.cat, appt.is_out_of_office)
 
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:

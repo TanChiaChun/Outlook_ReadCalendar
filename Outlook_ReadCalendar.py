@@ -41,7 +41,6 @@ CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
 CAT_START = "Task_Start"
 folder = r"data\python"
-exclude_prefixes = args.exclude_prefix.split(',')
 appts = []
 appts_all_day = []
 date_dict = {}
@@ -133,9 +132,11 @@ def count_all_days(pStart_date, pEnd_date, pCat, pIs_out_of_office):
 # Create output folder if not exists
 os.makedirs(folder, exist_ok=True)
 
-# Process dates command arguments
+# Process command arguments
 start_date = process_arg_date(args.startdate, 0)
 end_date = process_arg_date(args.enddate, 1)
+exclude_prefixes = args.exclude_prefix.split(';')
+exclude_prefixes.pop()
 
 # Init Outlook
 app = win32com.client.Dispatch("Outlook.Application")

@@ -16,8 +16,8 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 
 # Get command line arguments
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
-my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
-my_arg_parser.add_argument("enddate", help="Enter end date in %Y-%m-%d format")
+my_arg_parser.add_argument("from_date", help="Enter start range in sample format 15/1/1999 3:30 pm")
+my_arg_parser.add_argument("to_date", help="Enter end range in sample format 15/1/1999 3:30 pm")
 my_arg_parser.add_argument("exclude_prefix", help="Populate list of prefix strings for excluding appointments, delimit with ';'")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
@@ -48,9 +48,6 @@ date_dict = {}
 ##################################################
 # Functions
 ##################################################
-def process_arg_date(pDate_str, pDay_delta):
-    return datetime.strptime(pDate_str, DATETIME_FORMAT_ARG) + timedelta(days=pDay_delta)
-
 def vbaDatetimeUtc_to_pyDatetime(pDateTime):
     return datetime.strptime(str(pDateTime), DATETIME_FORMAT_VBA_OUTPUT) + timedelta(hours=8)
 
@@ -133,8 +130,8 @@ def count_all_days(pStart_date, pEnd_date, pCat, pIs_out_of_office):
 os.makedirs(folder, exist_ok=True)
 
 # Process command arguments
-start_date = process_arg_date(args.startdate, 0)
-end_date = process_arg_date(args.enddate, 1)
+from_date = args.from_date
+to_date = args.to_date
 exclude_prefixes = args.exclude_prefix.split(';')
 exclude_prefixes.pop()
 
@@ -155,25 +152,26 @@ fol_i = -1
 while (fol_i < len(outlook_cal_folders)):
     # Get calendar appointment items
     cal_items = outlook_cal_folder.Items
+    cal_items.Sort("[Start]")
     cal_items.IncludeRecurrences = True
+    cal_items_filtered = cal_items.Restrict(f"[Start] >= '{from_date}' and [Start] <= '{to_date}'")
 
     # Process & filter calendar appointment items
     appt_count = 0
     appt_all_day_count = 0
-    for cal in cal_items:
+    for cal in cal_items_filtered:
         if cal.Subject.startswith(tuple(exclude_prefixes)):
             continue
 
         cStart = vbaDatetimeUtc_to_pyDatetime(cal.StartUTC)
         cEnd = vbaDatetimeUtc_to_pyDatetime(cal.EndUTC)
-        if cStart >= start_date and cEnd <= end_date:
-            if not(cal.AllDayEvent):
-                appts.append(MyCls.Appointment(cStart, cEnd, False, "", False))
-                appt_count += 1
-            elif cal.AllDayEvent:
-                cIs_out_of_office = True if (cal.BusyStatus == 3) else False
-                appts_all_day.append(MyCls.Appointment(cStart, cEnd, True, cal.Categories, cIs_out_of_office))
-                appt_all_day_count += 1
+        if not(cal.AllDayEvent):
+            appts.append(MyCls.Appointment(cStart, cEnd, False, "", False))
+            appt_count += 1
+        elif cal.AllDayEvent:
+            cIs_out_of_office = True if (cal.BusyStatus == 3) else False
+            appts_all_day.append(MyCls.Appointment(cStart, cEnd, True, cal.Categories, cIs_out_of_office))
+            appt_all_day_count += 1
 
     logger.info(f"Extracted {appt_count} appointments & {appt_all_day_count} all days from {outlook_cal_folder.Name}")
     

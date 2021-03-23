@@ -35,7 +35,7 @@ logger = logging.getLogger("my_logger")
 ##################################################
 # Variables
 ##################################################
-DATETIME_FORMAT_ARG = "%Y-%m-%d"
+DATETIME_FORMAT_ARG = "%d/%m/%Y %H:%M %p"
 DATETIME_FORMAT_VBA_OUTPUT = "%Y-%m-%d %H:%M:%S+00:00"
 CAT_DUE = "Task_Due"
 CAT_DO = "Task_Do"
@@ -229,8 +229,13 @@ for appt in appts_all_day:
 # Write date dictionary to txt
 with open(f"{folder}/calendar_cal.txt", 'w') as writer:
     writer.write("Day,BusyHours,AllDayEvents,Due,Do,Start,OutOfOffice\n")
-    for key, value in date_dict.items():
-        writer.write(f"{key},{value}\n")
+    cDate = datetime.strptime(from_date, DATETIME_FORMAT_ARG).date()
+    while cDate < datetime.strptime(to_date, DATETIME_FORMAT_ARG).date():
+        if date_dict.get(cDate) == None:
+            writer.write(f"{cDate},0.0,0,0,0,0,False\n")
+        else:
+            writer.write(f"{cDate},{date_dict[cDate]}\n")
+        cDate += timedelta(days=1)
 logger.info(f"Output written to {CURR_DIR}\{folder}")
 
 finalise_app()

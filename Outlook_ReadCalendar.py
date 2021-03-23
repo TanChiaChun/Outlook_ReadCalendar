@@ -18,7 +18,7 @@ PROJ_NAME = CURR_FILE.split('.')[0]
 my_arg_parser = argparse.ArgumentParser(description=f"{PROJ_NAME}")
 my_arg_parser.add_argument("startdate", help="Enter start date in %Y-%m-%d format")
 my_arg_parser.add_argument("enddate", help="Enter end date in %Y-%m-%d format")
-my_arg_parser.add_argument("exclude_prefix", help="Populate list of prefix strings for excluding appointments, delimit with ','")
+my_arg_parser.add_argument("exclude_prefix", help="Populate list of prefix strings for excluding appointments, delimit with ';'")
 my_arg_parser.add_argument("--log", help="DEBUG to enter debug mode")
 args = my_arg_parser.parse_args()
 

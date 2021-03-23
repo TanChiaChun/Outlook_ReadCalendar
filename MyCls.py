@@ -8,7 +8,7 @@ class Day:
         self.is_out_of_office = is_out_of_office
     
     def __str__(self):
-        return f"{self.busy_hours.total_seconds() / 3600},{self.all_day_events},{self.due},{self.do},{self.start},{self.is_out_of_office}"
+        return f"{round(self.busy_hours.total_seconds() / 3600, 2)},{self.all_day_events},{self.due},{self.do},{self.start},{self.is_out_of_office}"
 
 class Appointment:
     def __init__(self, start, end, is_all_day, cat, is_out_of_office):
